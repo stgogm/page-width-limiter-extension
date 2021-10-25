@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "Page Width Limiter",
+  "version": "0.0.0",
+  "description": "Limits the width of a web page so it can be properly enjoyed on ultra and super ultra wide monitors.",
+  "permissions": ["activeTab", "scripting", "tabs", "storage"],
+  "action": {
+    "default_popup": "popup.html"
+  }
+}
