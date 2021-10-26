@@ -1,18 +1,14 @@
-let active;
+const getCSS = (width) =>
+  `:root { max-width: ${width} !important; margin: 0 auto !important; }`;
 
-const getCSS = (width) => `html { max-width: ${width}; margin: 0 auto; }`;
 const applyStyles = async (tabId) => {
-  if (tabId !== active) {
-    return Promise.resolve();
-  }
+  const tabIdStr = String(tabId)
 
-  chrome.storage.sync.get(String(active), async ({ [active]: width }) => {
-    console.log("tab", active, "width", width);
-
+  return chrome.storage.sync.get(tabIdStr, async ({ [tabIdStr]: width }) => {
     if (width) {
       try {
         await chrome.scripting.insertCSS({
-          target: { tabId: active },
+          target: { tabId: tabId },
           css: getCSS(width),
         });
 
@@ -24,34 +20,29 @@ const applyStyles = async (tabId) => {
   });
 };
 
+chrome.tabs.onActivated.addListener(({ tabId }) => applyStyles(tabId));
 chrome.tabs.onUpdated.addListener((tabId) => applyStyles(tabId));
-
-chrome.tabs.onActivated.addListener(({ tabId }) => {
-  active = tabId;
-
-  applyStyles(tabId);
-});
-
 chrome.runtime.onMessage.addListener(async ({ width }) => {
-  const tabId = String(active);
+  const [tab] = await chrome.tabs.query({ active: true });
+  const tabIdStr = String(tab.id);
 
-  return chrome.storage.sync.get(tabId, async ({ [tabId]: curr }) => {
+  return chrome.storage.sync.get(tabIdStr, async ({ [tabIdStr]: curr }) => {
     if (curr) {
       try {
         await chrome.scripting.removeCSS({
-          target: { tabId: active },
+          target: { tabId: tab.id },
           css: getCSS(curr),
         });
       } catch {}
     }
 
     if (width) {
-      await chrome.storage.sync.set({ [tabId]: width });
+      await chrome.storage.sync.set({ [tabIdStr]: width });
     } else {
-      await chrome.storage.sync.remove(tabId);
+      await chrome.storage.sync.remove(tabIdStr);
     }
 
-    await applyStyles(active);
+    await applyStyles(tab.id);
 
     return true;
   });
